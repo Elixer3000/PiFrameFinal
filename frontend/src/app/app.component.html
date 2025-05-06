@@ -1,0 +1,116 @@
+<nav class="navbar navbar-dark myColor mb-4">
+  <div class="container-fluid text-center">
+    <span class="navbar-brand mb-0 h1 text-center w-100">PiFrame Uploader</span>
+  </div>
+</nav>
+
+<div class="container myContainer">
+
+  <!-- Upload Card -->
+  <div class="card mb-4">
+    <div class="card-body text-center">
+        <p class="card-title">Drag & Drop or Browse</p>
+      <div class="my-3">
+        <input
+          type="file"
+          multiple
+          (change)="onDropFiles($event)"
+          class="form-control"
+        />
+        <div
+          class="border border-secondary rounded p-4 mt-3 bg-light"
+          (drop)="onDropFiles($event)"
+          (dragover)="$event.preventDefault()"
+        >
+          <p class="mb-0">…or drag your files here…</p>
+        </div>
+      </div>
+      <div class="text-center">
+        <button class="btn btn-success" (click)="upload()">Upload</button>
+        <div *ngIf="uploadSuccess" class="alert alert-success mt-2" role="alert">
+          Files uploaded successfully!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player & Playlist -->
+  <div class="card" *ngIf="playlist.length">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-center mb-4">
+        <button class="btn btn-outline-secondary me-3" (click)="prev()">&lt;</button>
+
+        <ng-container *ngIf="isImage(playlist[currentIdx])">
+          <img [src]="currentUrl()" class="img-fluid rounded" />
+        </ng-container>
+        <ng-container *ngIf="isVideo(playlist[currentIdx])">
+          <video [src]="currentUrl()" controls class="img-fluid rounded"></video>
+        </ng-container>
+
+        <button class="btn btn-outline-secondary ms-3" (click)="next()">&gt;</button>
+      </div>
+
+      <h3>Playlist</h3>
+
+      <div class="slider-container custPadding">
+        <button class="slider-nav prev" (click)="slidePrev()">&lt;</button>
+        <div class="container">
+          <div
+          #playlistSlider
+          cdkDropList
+          (cdkDropListDropped)="dropList($event)"
+          class="playlist-slider"
+        >
+          <div
+            *ngFor="let item of playlist; let i = index"
+            cdkDrag
+            class="playlist-item">
+            <div class="thumb mb-2">
+              <img
+                *ngIf="isImage(item)"
+                [src]="'http://localhost:3000/uploadedMedia/'+item"
+                class="img-fluid rounded"
+              />
+              <video
+                *ngIf="isVideo(item)"
+                [src]="'http://localhost:3000/uploadedMedia/'+item"
+                muted
+                preload="metadata"
+                class="img-fluid rounded"
+              ></video>
+              <!-- //prod -->
+              <!-- <div class="thumb mb-2">
+                <img
+                *ngIf="isImage(item)"
+                [src]="'/uploadedMedia/' + item"
+                  class="img-fluid rounded"
+                />
+                <video
+                *ngIf="isVideo(item)"
+                [src]="'/uploadedMedia/' + item"
+                muted preload="metadata"
+              ></video>
+              </div> -->
+
+            </div>
+            <!-- <div class="filename text-truncate mb-1">{{ item }}</div> -->
+            <button class="btn btn-sm mybutt" (click)="delete(i)">
+              Delete
+            </button>
+          </div>
+        </div>
+        </div>
+        <button class="slider-nav next" (click)="slideNext()">&gt;</button>
+      </div>
+
+      <div class="text-center mt-3">
+        <div class="text-center mt-3">
+          <button class="btn btn-primary" (click)="saveOrder()">Update Playlist</button>
+          <div *ngIf="saveOrderSuccess" class="alert alert-success mt-2" role="alert">
+            Playlist order saved successfully!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
