@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 const MEDIA_DIR = path.join(__dirname, 'uploadedMedia');
-const PLAYLIST = path.join(__dirname, 'playlist.txt');
+const PLAYLIST = path.join(__dirname, 'playlists/inactive/playlist.txt');
 
 // Ensure media directory and playlist file exist
 if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR);
