@@ -47,7 +47,8 @@ app.get('/api/playlists', (req, res) => {
       return res.json([]);
     }
 
-    const files = fs.readdirSync(playlistsDir);
+    var files = fs.readdirSync(path.join(playlistsDir, 'active/'));
+    files = files.concat(fs.readdirSync(path.join(playlistsDir, 'inactive/')));
     const playlists = files
       .filter(file => file.endsWith('.txt'))
       .map(file => {
@@ -55,7 +56,15 @@ app.get('/api/playlists', (req, res) => {
         const baseFileName = path.basename(file, '.txt');
         
         // Read the file content and split by lines to get filenames
-        const content = fs.readFileSync(path.join(playlistsDir, file), 'utf8');
+        const filePathA = path.join(playlistsDir, "active/"+file);
+        const filePathI = path.join(playlistsDir, "inactive/"+file);
+        var content;
+        if (fs.existsSync(filePathA)) content = fs.readFileSync(filePathA, 'utf8');
+        else if (fs.existsSync(filePathI)) content = fs.readFileSync(filePathI, 'utf8');
+        else {
+          return res.status(404).json({ error: 'Playlist not found' });
+        }
+        
         const filenames = content.trim().split('\n').filter(line => line.trim() !== '');
         
         // Create media items from filenames
@@ -68,8 +77,8 @@ app.get('/api/playlists', (req, res) => {
           
           // Determine file type based on extension
           const ext = path.extname(filename).toLowerCase();
-          const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
-          const isVideo = ['.mp4', '.webm', '.ogg', '.mov', '.avi'].includes(ext);
+          const isImage = ['.jpg', '.jpeg', '.png', '.tiff', '.webp', '.bmp'].includes(ext);
+          const isVideo = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mpg', '.mpg', '.wmv'].includes(ext);
           const type = isImage ? 'image' : isVideo ? 'video' : 'unknown';
           
           return {
@@ -105,7 +114,7 @@ app.post('/api/playlists', (req, res) => {
     }
 
     // Create a filename-safe version of the name
-    const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const safeName = name.replace(/[^a-z0-9]/gi, '_');
     
     const playlist = {
       id: safeName,
@@ -115,7 +124,7 @@ app.post('/api/playlists', (req, res) => {
 
     const filename = `${safeName}.txt`;
     // Create an empty playlist file
-    fs.writeFileSync(path.join(playlistsDir, filename), '');
+    fs.writeFileSync(path.join(playlistsDir, "inactive/"+filename), '');
 
     res.status(201).json(playlist);
   } catch (error) {
@@ -131,19 +140,30 @@ app.put('/api/playlists/:id', (req, res) => {
     const playlistData = req.body;
     
     const filename = `${id}.txt`;
-    const filePath = path.join(playlistsDir, filename);
+    const filePathA = path.join(playlistsDir, "active/"+filename);
+    const filePathI = path.join(playlistsDir, "inactive/"+filename);
     
-    if (!fs.existsSync(filePath)) {
+    if (fs.existsSync(filePathA)){
+      // Extract just the filenames from the items and join with newlines
+      const fileList = playlistData.items.map(item => item.filename).join('\n');
+      
+      // Write only the filenames to the playlist text file
+      fs.writeFileSync(filePathA, fileList);
+      
+      res.json(playlistData);}
+    else if (fs.existsSync(filePathI)){
+      // Extract just the filenames from the items and join with newlines
+      const fileList = playlistData.items.map(item => item.filename).join('\n');
+      
+      // Write only the filenames to the playlist text file
+      fs.writeFileSync(filePathI, fileList);
+      
+      res.json(playlistData);
+    }
+    else {
       return res.status(404).json({ error: 'Playlist not found' });
     }
     
-    // Extract just the filenames from the items and join with newlines
-    const fileList = playlistData.items.map(item => item.filename).join('\n');
-    
-    // Write only the filenames to the playlist text file
-    fs.writeFileSync(filePath, fileList);
-    
-    res.json(playlistData);
   } catch (error) {
     console.error('Error updating playlist:', error);
     res.status(500).json({ error: 'Failed to update playlist' });
@@ -155,13 +175,14 @@ app.delete('/api/playlists/:id', (req, res) => {
   try {
     const { id } = req.params;
     const filename = `${id}.txt`;
-    const filePath = path.join(playlistsDir, filename);
+    const filePathA = path.join(playlistsDir, "active/"+filename);
+    const filePathI = path.join(playlistsDir, "inactive/"+filename);
     
-    if (!fs.existsSync(filePath)) {
+    if (fs.existsSync(filePathA)) fs.unlinkSync(filePathA);
+    else if (fs.existsSync(filePathI)) fs.unlinkSync(filePathI);
+    else {
       return res.status(404).json({ error: 'Playlist not found' });
     }
-    
-    fs.unlinkSync(filePath);
     
     res.json({ message: 'Playlist deleted successfully' });
   } catch (error) {
@@ -201,9 +222,18 @@ app.post('/api/playlists/:id/media', (req, res) => {
     const { mediaItems } = req.body;
     
     const filename = `${id}.txt`;
-    const filePath = path.join(playlistsDir, filename);
+    const filePathA = path.join(playlistsDir, "active/"+filename);
+    const filePathI = path.join(playlistsDir, "inactive/"+filename);
     
-    if (!fs.existsSync(filePath)) {
+    var filePath;
+    
+    if (fs.existsSync(filePathA)) {
+      filePath = filePathA;
+    }
+    else if (fs.existsSync(filePathI)) {
+      filePath = filePathI;
+    }
+    else {
       return res.status(404).json({ error: 'Playlist not found' });
     }
     

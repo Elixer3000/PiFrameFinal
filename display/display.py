@@ -21,7 +21,7 @@ idx = 0
 
 #display to the PiTFT
 os.putenv('SDL_VIDEODRIVER','fbcon')
-os.putenv('SDL_FBDEV','/dev/fb1')
+os.putenv('SDL_FBDEV','/dev/fb0')
 os.putenv('SDL_MOUSEDRV','dummy')
 os.putenv('SDL_MOUSEDEV','/dev/null')
 #os.putenv('DISPLAY','')
@@ -173,7 +173,7 @@ try:
 										+ " " + inactivePlaylistDir)
 						os.system("mv " + inactivePlaylistDir + playlists[selected]\
 									+ " " + activePlaylistDir)
-						selected, offset = 0, 0
+						selected, offset, idx = 0, 0, 0
 						fetchImages()
 					elif y > 210 and x > 240:
 						select = False
@@ -235,6 +235,7 @@ try:
 						if len(playlists) > 0:
 							os.system("mv " + activePlaylistDir + playlists[0]\
 										+ " " + inactivePlaylistDir)
+						idx = 0
 						fetchImages()
 					elif y > 200 and x > 260:
 						#quit
@@ -251,7 +252,6 @@ try:
 			rect = text_surface.get_rect(center=(160,60))
 			screen.blit(text_surface, rect)
 			
-			#ip = subprocess.check_output("ifconfig wlan0 | grep -i mask | awk '{print $2}' | cut -f2 -d:", shell=True).readline().decode().strip()
 			ip = ''
 			with open("/home/pi/PiFrameFinal/ip.txt") as ipfile:
 				ip = ipfile.readline().strip()
@@ -299,12 +299,6 @@ try:
 					if not pause:
 						vidTime = vidTime + 1/media.fps
 						
-					#handle touchscreen events (tap to move to next file)
-					for event in pygame.event.get():
-						if(event.type is MOUSEBUTTONUP):
-							pause = False
-							vidTime = float('inf')
-						
 				media.close()
 			else:
 			#current file is an image, display image
@@ -321,13 +315,6 @@ try:
 					time.sleep(0.01)
 					if not pause:
 						imgTime = imgTime + time.time()-t
-					
-					#handle touchscreen events (tap to move to next file)
-					for event in pygame.event.get():
-						if(event.type is MOUSEBUTTONUP):
-							print('here')
-							pause = False
-							imgTime = float('inf')
 					
 			imgTime = 0
 			vidTime = 0
